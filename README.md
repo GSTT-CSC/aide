@@ -1,14 +1,20 @@
 # aide
 Plugins, pipelines and functions for AI Deployment Engine
 
-Structure
----------
+# Structure
 
-Plugins
----------
+## Pipelines
+- By disease or body part or primary input data?
 
-Pipelines
----------
+## Functions/Operators
+- By input data or output data or clinical specialty (with misc.)?
 
-Functions/Operators
----------
+## Plugins
+- Notifications
+  - NHSMail
+  - Other protocols
+- Clinical guidelines/APIs
+  - UK RCPCH Growth Chart API
+  - Other clinical guidelines/APIs
+
+
