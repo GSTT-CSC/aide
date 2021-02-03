@@ -1,0 +1,36 @@
+plugin:
+    appHost: 192.168.50.11
+    mail:
+        smtp_host: smtp.gmail.com
+        smtp_port: 587
+        smtp_user: marcin.dudkowski@cubegames.pl
+        smtp_password: eknwuwrivelalvux
+        email_subject: Processing success - ({})
+        email_from: Test Account <marcin.dudkowski@cubegames.pl>
+        email_to:
+            - marcin.dudkowski@fortrus.com
+            # - marcin.dudkowski@fortrus.com
+            # - dudi@cubegames.pl
+        # https://security.google.com/settings/security/apppasswords
+        error_message_template: |
+            <p>Image processed</p>
+            <p><span style="font-size: 150%"><b>{}</b></span></p>
+            <a href="{}">Click to see details</a>
+
+app:
+    # this
+    destination_path: /mnt/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue:
+        name: success
+        type: RMQ
+        host: rmq
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: db
+        port: 27017
+        db: ai
+        collection: history.jobs

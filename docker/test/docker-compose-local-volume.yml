@@ -1,0 +1,260 @@
+version: "3"
+
+services:
+  db:
+    build:
+      context: ./mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - db-data:/data/db
+      - db-config:/data/configdb
+  rmq:
+    build:
+      context: ./rabbitmq
+    ports:
+      - "15672:15672"
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "25672:25672"
+    volumes: 
+      - rmq-data:/var/lib/rabbitmq
+
+  # WEB SERVER instance
+  web_server:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-web
+    privileged: true
+    ports:
+      - "5000:5000"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - scanner-data:/mnt/import
+      - net-fs-data:/mnt/data
+    depends_on:
+      - db
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web_server
+
+  # SCANNER instance
+  scanner:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-scanner
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - scanner-data:/mnt/import
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # DICOM instance
+  dicom:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-dicom
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    ports:
+      - "11112:11112"
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # DISPATCHER instance
+  dispatcher:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-dispatcher
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # VALIDATOR instance (simple plugin)
+  validator:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-validator
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # SEND_ERROR instance
+  send_error:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-send-error
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # SEND_SUCCESS instance
+  send_success:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-send-success
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+
+  # QC measure
+  qc_make_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-make-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # QC measure
+  qc_post_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-post-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # QC measure
+  qc_store_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-store-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - net-fs-data:/mnt/data
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+    
+  gluster-s1:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Slave.dockerfile
+    volumes: 
+      - glusterfs-s1-etc:/etc/glusterfs:z
+      - glusterfs-s1-lib:/var/lib/glusterd:z
+      - glusterfs-s1-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-s1-lvm:/run/lvm
+      - glusterfs-s1-data:/data
+  gluster-s2:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Slave.dockerfile
+    volumes: 
+      - glusterfs-s2-etc:/etc/glusterfs:z
+      - glusterfs-s2-lib:/var/lib/glusterd:z
+      - glusterfs-s2-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-s2-lvm:/run/lvm
+      - glusterfs-s2-data:/data
+  gluster-m:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Master.dockerfile
+    volumes: 
+      - glusterfs-m-etc:/etc/glusterfs:z
+      - glusterfs-m-lib:/var/lib/glusterd:z
+      - glusterfs-m-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-m-lvm:/run/lvm
+      - glusterfs-m-data:/data
+    depends_on:
+      - gluster-s1
+      - gluster-s2
+volumes:
+  db-data:
+  db-config:
+  rmq-data:
+  glusterfs-m-etc:
+  glusterfs-m-lib:
+  glusterfs-m-log:
+  glusterfs-m-lvm:
+  glusterfs-s1-etc:
+  glusterfs-s1-lib:
+  glusterfs-s1-log:
+  glusterfs-s1-lvm:
+  glusterfs-s2-etc:
+  glusterfs-s2-lib:
+  glusterfs-s2-log:
+  glusterfs-s2-lvm:
+  glusterfs-m-data:
+  glusterfs-s1-data:
+  glusterfs-s2-data:
+  scanner-data:
+  net-fs-data:

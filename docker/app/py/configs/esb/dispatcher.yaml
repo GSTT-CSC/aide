@@ -1,0 +1,56 @@
+plugin:
+    workflow:
+        # state machine here
+        # every stage can reroute to any other stage and set data props in that process
+        pipeline:
+            -
+                condition: "job['_stage'] == 'created'"
+                queue: "validate"
+                stage: "validation"
+                data: |+
+                    data = {
+                        "response_queue": "dispatcher",
+                        "display_Pipeline": "Image QA"
+                    }
+            -
+                condition: "job['_stage'] == 'validated'"
+                queue: "qc_make"
+                stage: "qc_make"
+            -
+                condition: "job['_stage'] == 'qc_make_done'"
+                queue: "qc_store"
+                stage: "qc_store"
+            -
+                condition: "job['_stage'] == 'qc_store_done'"
+                queue: "qc_post"
+                stage: "qc_post"
+            -
+                condition: "job['_stage'] == 'qc_post_done'"
+                queue: "success"
+                stage: "send_success"
+                data: |+
+                    data = {
+                        "error_desc": {
+                            "success_subject": "Series have just been analysed",
+                            "success_message": "Data processed"
+                        },
+                        "__is_finished": 1
+                    }                
+
+# this is scanner (app / could be something else) config itself
+app:
+    destination_path: /mnt/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: dispatcher
+        type: RMQ
+        host: rmq
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: db
+        port: 27017
+        db: ai
+        collection: history.jobs

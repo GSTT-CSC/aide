@@ -1,0 +1,320 @@
+version: "3"
+
+services:
+  db:
+    build:
+      context: ./mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - db-data:/data/db
+      - db-config:/data/configdb
+  rmq:
+    build:
+      context: ./rabbitmq
+    ports:
+      # - "8080:15672"
+      - "15672:15672"
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "25672:25672"
+    volumes: 
+      - rmq-data:/var/lib/rabbitmq
+
+  # WEB SERVER instance
+  web_server:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-web
+    privileged: true
+    ports:
+      - "5000:5000"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - scanner-data:/mnt/import
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - db
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web_server
+
+  # SCANNER instance
+  scanner:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-scanner
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - scanner-data:/mnt/import
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # DICOM instance
+  dicom:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-dicom
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    ports:
+      - "11112:11112"
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # DISPATCHER instance
+  dispatcher:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-dispatcher
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # VALIDATOR instance (simple plugin)
+  validator:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-validator
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # SEND_ERROR instance
+  send_error:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-send-error
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # SEND_SUCCESS instance
+  send_success:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-send-success
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+
+  # QC measure
+  qc_make_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-make-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # QC measure
+  qc_post_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-post-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+  # QC measure
+  qc_store_measurements:
+    build:
+      context: ./app
+      dockerfile: Dockerfile-qc-store-measurements
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts: # dev only
+      - "gluster-client:192.168.50.20"
+      - "gluster-server-1:192.168.50.21"
+      - "gluster-server-2:192.168.50.22"
+      - "gluster-server-3:192.168.50.23"
+    depends_on:
+      - rmq
+      - gluster-m
+      - gluster-s1
+      - gluster-s2
+    restart: unless-stopped
+    
+  gluster-s1:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Slave.dockerfile
+    volumes: 
+      - glusterfs-s1-etc:/etc/glusterfs:z
+      - glusterfs-s1-lib:/var/lib/glusterd:z
+      - glusterfs-s1-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-s1-lvm:/run/lvm
+      - glusterfs-s1-data:/data
+  gluster-s2:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Slave.dockerfile
+    volumes: 
+      - glusterfs-s2-etc:/etc/glusterfs:z
+      - glusterfs-s2-lib:/var/lib/glusterd:z
+      - glusterfs-s2-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-s2-lvm:/run/lvm
+      - glusterfs-s2-data:/data
+  gluster-m:
+    privileged: true
+    build:
+      context: ./glusterfs
+      dockerfile: Master.dockerfile
+    volumes: 
+      - glusterfs-m-etc:/etc/glusterfs:z
+      - glusterfs-m-lib:/var/lib/glusterd:z
+      - glusterfs-m-log:/var/log/glusterfs:z
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - glusterfs-m-lvm:/run/lvm
+      - glusterfs-m-data:/data
+      # - /var/local/data:/data
+    # ports:
+    #   - "111:111"
+    #   - "2049:2049"
+    #   - "2222:2222"
+    #   - "24007:24007"
+    #   - "245:245"
+    #   - "38465:38465"
+    #   - "38466:38466"
+    #   - "38467:38467"
+    #   - "38468:38468"
+    #   - "38469:38469"
+    #   - "443:443"
+    #   - "49152:49152"
+    #   - "49153:49153"
+    #   - "49154:49154"
+    #   - "49155:49155"
+    #   - "49156:49156"
+    #   - "49157:49157"
+    #   - "49158:49158"
+    #   - "49159:49159"
+    #   - "49160:49160"
+    #   - "49161:49161"
+    #   - "49162:49162"
+    #   - "6010:6010"
+    #   - "6011:6011"
+    #   - "6012:6012"
+    #   - "8080:8080"
+    depends_on:
+      - gluster-s1
+      - gluster-s2
+volumes:
+  db-data:
+  db-config:
+  rmq-data:
+  glusterfs-m-etc:
+  glusterfs-m-lib:
+  glusterfs-m-log:
+  glusterfs-m-lvm:
+  glusterfs-s1-etc:
+  glusterfs-s1-lib:
+  glusterfs-s1-log:
+  glusterfs-s1-lvm:
+  glusterfs-s2-etc:
+  glusterfs-s2-lib:
+  glusterfs-s2-log:
+  glusterfs-s2-lvm:
+  glusterfs-m-data:
+  glusterfs-s1-data:
+  glusterfs-s2-data:
+  scanner-data:

@@ -1,0 +1,21 @@
+plugin:
+    todo: 1
+
+# this is scanner (app / could be something else) config itself
+app:
+    # this 
+    destination_path: /mnt/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: validate
+        type: RMQ
+        host: rmq
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: db
+        port: 27017
+        db: ai
+        collection: history.jobs

@@ -1,0 +1,20 @@
+plugin:
+    todo: 1
+
+app:
+    # this 
+    destination_path: /Users/dudi/Temp/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: validate
+        type: RMQ
+        host: 127.0.0.1
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: 127.0.0.1
+        port: 27017
+        db: ai
+        collection: history.jobs

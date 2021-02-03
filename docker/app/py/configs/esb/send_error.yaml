@@ -1,0 +1,38 @@
+plugin:
+    appHost: 192.168.50.11
+    mail:
+        smtp_host: smtp.gmail.com
+        smtp_port: 587
+        smtp_user: marcin.dudkowski@cubegames.pl
+        smtp_password: eknwuwrivelalvux
+        email_subject: Processing error - ({})
+        email_from: Info Account <marcin.dudkowski@cubegames.pl>
+        email_to:
+            - marcin.dudkowski@fortrus.com
+            # - marcin.dudkowski@fortrus.com
+            # - dudi@cubegames.pl
+        # https://security.google.com/settings/security/apppasswords
+        error_message_template: |
+            <p stye="color red;">There is a problem</p>
+            <p><span style="font-size: 150%"><b>{}</b></span></p>
+            <p>Please check is everything ok with system configuration.</p>
+            <p>Traceback:</p>
+            <p>{}<p>
+            <a href="{}">Click to see details</a>
+
+app:
+    destination_path: /mnt/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: error
+        type: RMQ
+        host: rmq
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: db
+        port: 27017
+        db: ai
+        collection: history.jobs

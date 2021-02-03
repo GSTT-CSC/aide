@@ -1,0 +1,86 @@
+plugin:
+    workflow:
+        # state machine here
+        # every stage can reroute to any other stage and set data props in that process
+
+        pipeline:
+            -
+                condition: "len(data) < 2"
+                queue: "error"
+                stage: "error"
+                data: |+
+                    data = {
+                        "error_desc": {
+                            "error_subject": "Not and MRI Series",
+                            "error_problem": "Data send are not valid",
+                            "error_traceback": "-- There is only one image in study at least 2 are required --"
+                        },
+                        "__is_error": 1
+                    }
+            -
+                condition: "len(data) < 3"
+                queue: "error"
+                stage: "error"
+                data: |+
+                    data = {
+                        "error_desc": {
+                            "error_subject": "Series is not QC-able",
+                            "error_problem": "Data send are not valid",
+                            "error_traceback": "-- There is only one image in study at least 3 are required --"
+                        },
+                        "__is_error": 1
+                    }
+            -
+                # test condition to illustrate some logic
+
+                # condition_complex this is exectuable python code where we need to set local variable result
+                # to simply determine execution status
+                condition_complex: |+
+                    result = True
+                    for d in data:
+                        result = (d.PatientID == '6854420_') and result
+                # this will be immidietly rejected
+                queue: "completed"
+                # this stage will be set on sending
+                stage: "rejected"
+                data: |+
+                    data = {
+                        "state": "rejected",
+                        "reason": "patient test rejection",
+                        "admin": 1
+                    }
+            -
+                # simply check some main variables and then state can be "checked" or "rejected"
+                condition: "job['_stage'] == 'created'"
+                queue: "validate"
+                # this stage will be set on sending
+                stage: "checking"
+                data: |+
+                    data = {
+                        "patientID": data[0].PatientID,
+                        "last_stage": job['_stage'],
+                        "response_queue": "dispatcher"
+                    }
+            -
+                condition: "job['_stage'] == 'validated'"
+                queue: "analyser"
+                stage: "analyse"
+
+# this is scanner (app / could be something else) config itself
+app:
+    # this 
+    destination_path: z:\
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: dispatcher
+        type: RMQ
+        host: 192.168.50.11
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: 192.168.50.11
+        port: 27017
+        db: ai
+        collection: history.jobs

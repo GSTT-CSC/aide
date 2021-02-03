@@ -1,0 +1,35 @@
+## file scanninig plugin
+
+# configuration specific to plugin settings
+# every plugin may have different one
+plugin:
+    path: d:\Projects\Fortrus\ai\demo\data\
+    study: true
+    attachemnts:
+        - .dcm
+    
+    # file processing is based on rdy files
+    # when this file is prosent main file will be processed
+    ready_file: .rdy
+    scanning_period: 5
+
+# this is scanner (app / could be something else) config itself
+app:
+    # this 
+    # destination_path: d:\Projects\Fortrus\ai\demo\shared\
+    destination_path: z:\
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: dispatcher
+        type: RMQ
+        host: 192.168.50.11
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: 192.168.50.11
+        port: 27017
+        db: ai
+        collection: history.jobs
+    

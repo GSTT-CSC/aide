@@ -1,0 +1,42 @@
+## file scanninig plugin
+
+# configuration specific to plugin settings
+# every plugin may have different one
+plugin:
+    port: 11112
+    # network timeout in seconds - 5 minutes by default
+    net_timeout: 300
+    mail:
+        smtp_host: smtp.gmail.com
+        smtp_port: 587
+        smtp_user: marcin.dudkowski@cubegames.pl
+        smtp_password: eknwuwrivelalvux
+        email_subject: Error during recieving DICOM data
+        email_from: Test Account <marcin.dudkowski@cubegames.pl>
+        email_to:
+            - marcin.dudkowski@fortrus.com
+            # - marcin.dudkowski@fortrus.com
+            # - dudi@cubegames.pl
+        # https://security.google.com/settings/security/apppasswords
+        error_message_template: |
+            <p>There is a problem:</p>
+            <p><span style="font-size: 150%"><b>{}</b></span></p>
+            <p>Please check is everything ok with system configuration.</p>
+
+# this is scanner (app / could be something else) config itself
+app:
+    destination_path: /mnt/data
+    # this is dispatcher queue
+    # it may be plugin queue directly if needed (dispatcher is a plugin)
+    queue: 
+        name: dispatcher
+        type: RMQ
+        host: rmq
+        user: admin
+        password: sa
+    database:
+        type: DBMongo
+        host: db
+        port: 27017
+        db: ai
+        collection: history.jobs

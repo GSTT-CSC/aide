@@ -1,0 +1,21 @@
+FROM python:3
+
+# for scanner is where we insert files
+RUN mkdir /mnt/import
+COPY examples/ /mnt/import
+RUN mkdir /mnt/data
+
+RUN apt update
+RUN apt install glusterfs-client -y
+
+WORKDIR /usr/src/app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+COPY py/ ./
+
+ENTRYPOINT [ "/usr/src/app/docker-entrypoint.sh", "./app/Executor.py", "send_success" ]
